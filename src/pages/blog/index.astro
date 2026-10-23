@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = await getCollection('blog');
+const sorted = allPosts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout title="📝 Blog" description="Bài viết về AI Agent, tự động hóa, Hermes Agent và năng suất làm việc">
+  <h1 class="section-title">📝 Blog</h1>
+  <p class="section-sub">Bài viết về AI Agent, tự động hóa, Hermes Agent và năng suất làm việc</p>
+  <ul class="post-list">
+    {sorted.map(post => (
+      <li>
+        <a href={`/blog/${post.id}/`}>{post.data.title}</a>
+        <span class="date">{new Intl.DateTimeFormat('vi-VN', {day:'2-digit',month:'2-digit',year:'numeric'}).format(post.data.date)}</span>
+      </li>
+    ))}
+  </ul>
+</BaseLayout>

@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const videos = await getCollection('youtube');
+const sorted = videos.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<BaseLayout title="🎬 YouTube — Văn Hỉ Official" description="Kênh YouTube chia sẻ kiến thức về AI Agent, Hermes Agent, tự động hóa cho SME Việt Nam">
+  <h1 class="section-title">🎬 YouTube — Văn Hỉ Official</h1>
+  <p class="section-sub">Kênh YouTube chia sẻ kiến thức về AI Agent, Hermes Agent, tự động hóa và năng suất làm việc</p>
+  <div class="yt-grid">
+    {sorted.map(video => (
+      <a href={video.data.redirect_url} target="_blank" style="text-decoration:none;color:inherit">
+        <div class="yt-card">
+          <img class="thumb" src={video.data.thumbnail} alt={video.data.title} loading="lazy" />
+          <div class="info">
+            <h3>{video.data.title}</h3>
+            <div class="meta">{video.data.views ? `${video.data.views} lượt xem` : ''}{' • '}{new Intl.DateTimeFormat('vi-VN', {day:'2-digit',month:'2-digit',year:'numeric'}).format(video.data.date)}</div>
+          </div>
+        </div>
+      </a>
+    ))}
+  </div>
+</BaseLayout>

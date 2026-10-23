@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const items = await getCollection('giai-phap');
+const sorted = items.sort((a, b) => (a.data.weight || 99) - (b.data.weight || 99));
+---
+
+<BaseLayout title="🧠 Giải pháp" description="Những giải pháp tôi xây dựng để giúp bạn tự động hóa công việc và tăng năng suất">
+  <h1 class="section-title">🧠 Giải pháp</h1>
+  <p class="section-sub">Những giải pháp tôi xây dựng để giúp bạn làm việc thông minh hơn</p>
+  <div class="grid-2">
+    {sorted.map(item => (
+      <div class="card">
+        <h3><a href={`/giai-phap/${item.slug}/`}>{item.data.title}</a></h3>
+        <p>{item.data.description}</p>
+      </div>
+    ))}
+  </div>
+</BaseLayout>

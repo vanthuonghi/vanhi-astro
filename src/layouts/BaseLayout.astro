@@ -1,0 +1,130 @@
+---
+export interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  canonical?: string;
+}
+
+const { title, description, ogImage, canonical } = Astro.props;
+const siteTitle = 'Văn Hỉ — AI Agent, Tự động hóa & Năng suất cho SME Việt Nam';
+const siteDesc = 'Văn Hỉ chia sẻ kiến thức về AI Agent, tự động hóa công việc, Hermes Agent và công cụ năng suất cho chủ doanh nghiệp nhỏ tại Việt Nam.';
+const og = ogImage || 'https://vanhi.id.vn/og-image.svg';
+const pageTitle = title ? `${title} – Văn Hỉ` : siteTitle;
+const pageDesc = description || siteDesc;
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === '/' || currentPath === '';
+---
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDesc} />
+  <meta name="author" content="Văn Hỉ" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="alternate" type="application/rss+xml" title="Văn Hỉ Blog" href="/rss.xml" />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={pageDesc} />
+  <meta property="og:image" content={og} />
+  <meta property="og:url" content={canonical || Astro.url.href} />
+  <meta property="og:type" content={isHome ? 'website' : 'article'} />
+  <meta name="twitter:card" content="summary_large_image" />
+  {canonical && <link rel="canonical" href={canonical} />}
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="logo">Văn <span>Hỉ</span></a>
+      <nav class="nav">
+        <a href="/" class={isHome ? 'active' : ''}>🏠 Trang chủ</a>
+        <a href="/giai-phap/" class={currentPath.startsWith('/giai-phap') ? 'active' : ''}>🧠 Giải pháp</a>
+        <a href="/blog/" class={currentPath.startsWith('/blog') ? 'active' : ''}>📝 Blog</a>
+        <a href="/youtube/" class={currentPath.startsWith('/youtube') ? 'active' : ''}>🎬 YouTube</a>
+        <a href="/qua-tang/" class={currentPath.startsWith('/qua-tang') ? 'active' : ''}>🎁 Quà tặng</a>
+        <a href="/cong-cu-ai/" class={currentPath.startsWith('/cong-cu-ai') ? 'active' : ''}>🔧 Công Cụ AI</a>
+        <a href="/lien-he/" class={currentPath.startsWith('/lien-he') ? 'active' : ''}>📞 Liên hệ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <slot />
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div style="max-width:800px;margin:0 auto;padding:0 20px 20px;text-align:center">
+      <h4 style="font-size:16px;margin-bottom:8px">📩 Nhận cập nhật từ Văn Hỉ</h4>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:14px">AI Agent, tự động hóa & năng suất — gửi thẳng vào email bạn</p>
+      <form class="lead-form" id="leadForm" action="https://crm.speedreading.vn/?fluentcrm=1&route=contact&hash=8542ba92-3bca-46fb-baee-1371d1899a36" method="POST">
+        <input type="hidden" name="source" value="vanhi.id.vn" />
+        <input type="email" name="email" placeholder="Nhập email của bạn..." required />
+        <input type="hidden" name="first_name" value="" />
+        <button type="submit">Đăng ký</button>
+      </form>
+      <p class="lead-note">📩 Không spam. Hủy bất cứ lúc nào.</p>
+    </div>
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h4>🧭 Khám phá</h4>
+        <a href="/giai-phap/">Giải pháp</a>
+        <a href="/blog/">Blog</a>
+        <a href="/youtube/">YouTube</a>
+      </div>
+      <div class="footer-col">
+        <h4>📦 Tài nguyên</h4>
+        <a href="/qua-tang/">Quà tặng miễn phí</a>
+        <a href="/cong-cu-ai/">Công Cụ AI</a>
+        <a href="/lien-he/">Liên hệ</a>
+      </div>
+      <div class="footer-col">
+        <h4>🌐 Kết nối</h4>
+        <a href="https://www.youtube.com/@vanhi2024" target="_blank">YouTube</a>
+        <a href="https://speedreading.vn/ahermes" target="_blank">Khóa học Hermes</a>
+      </div>
+    </div>
+    <div class="footer-copy">
+      &copy; 2026 Văn Hỉ. Nội dung được chia sẻ miễn phí.
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('leadForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button');
+      const email = this.querySelector('input[name="email"]');
+      const originalText = btn.textContent;
+      btn.textContent = 'Đang gửi...';
+      btn.disabled = true;
+      try {
+        const resp = await fetch(this.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.value,
+            source: 'vanhi.id.vn',
+            first_name: '',
+            status: 'subscribed'
+          })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          btn.textContent = '✅ Đã đăng ký!';
+          email.value = '';
+        } else {
+          btn.textContent = '❌ Lỗi, thử lại';
+          setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 2000);
+        }
+      } catch(e) {
+        btn.textContent = '❌ Lỗi kết nối';
+        setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 2000);
+      }
+    });
+  </script>
+</body>
+</html>

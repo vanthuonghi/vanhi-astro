@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const items = await getCollection('qua-tang');
+const sorted = items.sort((a, b) => (a.data.weight || 99) - (b.data.weight || 99));
+---
+
+<BaseLayout title="🎁 Quà tặng miễn phí" description="Tài nguyên, checklist, template miễn phí về AI Agent và tự động hóa">
+  <h1 class="section-title">🎁 Quà tặng miễn phí</h1>
+  <p class="section-sub">Tài nguyên tôi đã chuẩn bị sẵn cho bạn</p>
+  <div class="grid-3">
+    {sorted.map(item => (
+      <div class="gift-card">
+        <div class="icon">{item.data.icon || '🎁'}</div>
+        <h3>{item.data.title}</h3>
+        <p>{item.data.description}</p>
+        <a href={`/qua-tang/${item.slug}/`} class="dl-btn">Xem chi tiết</a>
+      </div>
+    ))}
+  </div>
+</BaseLayout>

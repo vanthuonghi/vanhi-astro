@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const items = await getCollection('lien-he');
+const sorted = items.sort((a, b) => (a.data.weight || 99) - (b.data.weight || 99));
+---
+
+<BaseLayout title="📞 Liên hệ" description="Kết nối với Văn Hỉ — YouTube, Email, Telegram">
+  <h1 class="section-title">📞 Liên hệ</h1>
+  <p class="section-sub">Kết nối với Văn Hỉ</p>
+  <div class="contact-grid">
+    {sorted.map(item => (
+      <a href={item.data.link || '#'} target="_blank" style="text-decoration:none;color:inherit">
+        <div class="contact-item">
+          <div class="icon">{item.data.icon || '📞'}</div>
+          <h3>{item.data.title}</h3>
+          <p>{item.data.description}</p>
+        </div>
+      </a>
+    ))}
+  </div>
+</BaseLayout>

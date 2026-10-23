@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const items = await getCollection('cong-cu-ai');
+const sorted = items.sort((a, b) => (a.data.weight || 99) - (b.data.weight || 99));
+---
+
+<BaseLayout title="🔧 Công Cụ AI" description="Tổng hợp các công cụ AI — sử dụng, affiliate, giới thiệu đến cộng đồng">
+  <h1 class="section-title">🔧 Công Cụ AI</h1>
+  <p class="section-sub">Khám phá các công cụ AI tôi đang sử dụng và giới thiệu. Mỗi công cụ đều được kiểm tra kỹ trước khi chia sẻ.</p>
+
+  <h2 style="font-size: 18px; margin: 24px 0 12px;">🔗 Link Affiliate</h2>
+  <div style="overflow-x: auto;">
+    <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <th style="text-align:left; padding: 8px;">Short URL</th>
+          <th style="text-align:left; padding: 8px;">Tool</th>
+          <th style="text-align:left; padding: 8px;">Hoa hồng</th>
+          <th style="text-align:left; padding: 8px;">Dùng để</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 8px;"><a href="https://vanhi.id.vn/nous">vanhi.id.vn/nous</a></td>
+          <td style="padding: 8px;"><strong>Nous Research Portal</strong> — \$15 off tháng đầu</td>
+          <td style="padding: 8px;">Flat \$15 + 20% year 1</td>
+          <td style="padding: 8px;">Hermes Agent, 200+ models</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 8px;"><a href="https://vanhi.id.vn/flyhermes">vanhi.id.vn/flyhermes</a></td>
+          <td style="padding: 8px;"><strong>FlyHermes</strong> — Hosted Hermes Agent</td>
+          <td style="padding: 8px;">Launch offer \$39/tháng</td>
+          <td style="padding: 8px;">Dùng Hermes không cần setup</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 style="font-size: 18px; margin: 32px 0 12px;">🧰 Công cụ</h2>
+  <div class="grid-3">
+    {sorted.map(item => (
+      <div class="card">
+        <div class="emoji">{item.data.icon || '🔧'}</div>
+        <h3><a href={item.data.link || `/cong-cu-ai/${item.slug}/`}>{item.data.title}</a></h3>
+        <p>{item.data.description}</p>
+      </div>
+    ))}
+  </div>
+</BaseLayout>
