@@ -1,0 +1,72 @@
+---
+const DEFAULT_HASH = 'c2073d0f21ad8f56aa780dca6708396ef2c84546d4ad56e55c0eae8db8cb25a8';
+---
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener — Văn Hỉ</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    input { padding: 8px; margin: 4px; border: 1px solid #d1d5db; border-radius: 4px; }
+    button { padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .link-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f3f4f6; }
+    .error { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <h1>🔗 URL Shortener</h1>
+  <div class="card">
+    <h3>Thêm link mới</h3>
+    <input type="text" id="slug" placeholder="Slug (vd: youtube)" />
+    <input type="text" id="url" placeholder="https://..." style="width: 300px;" />
+    <button onclick="addLink()">Thêm</button>
+    <p id="msg"></p>
+  </div>
+  <div class="card">
+    <h3>Danh sách link</h3>
+    <div id="links"></div>
+  </div>
+  <script>
+    const API = '/api/link';
+    const HASH = '${DEFAULT_HASH}';
+    const headers = { 'Authorization': 'Bearer ' + HASH, 'Content-Type': 'application/json' };
+
+    async function load() {
+      const res = await fetch(API, { headers });
+      const data = await res.json();
+      const container = document.getElementById('links');
+      container.innerHTML = '';
+      for (const [slug, info] of Object.entries(data.links || {})) {
+        const div = document.createElement('div');
+        div.className = 'link-item';
+        div.innerHTML = `<div><strong>/${slug}</strong> → <a href="${info.url}" target="_blank">${info.url}</a></div>
+          <button onclick="deleteLink('${slug}')" style="background:#dc2626">Xóa</button>`;
+        container.appendChild(div);
+      }
+    }
+
+    async function addLink() {
+      const slug = document.getElementById('slug').value.trim();
+      const url = document.getElementById('url').value.trim();
+      const msg = document.getElementById('msg');
+      if (!slug || !url) { msg.textContent = 'Nhập đầy đủ slug và url'; msg.className = 'error'; return; }
+      const res = await fetch(API, {
+        method: 'POST', headers,
+        body: JSON.stringify({ slug, url })
+      });
+      const data = await res.json();
+      if (data.success) { msg.textContent = 'Đã thêm!'; msg.className = ''; load(); }
+      else { msg.textContent = data.error || 'Lỗi'; msg.className = 'error'; }
+    }
+
+    async function deleteLink(slug) {
+      await fetch(API, { method: 'DELETE', headers, body: JSON.stringify({ slug }) });
+      load();
+    }
+
+    load();
+  </script>
+</body>
+</html>
