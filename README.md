@@ -1,43 +1,88 @@
-# Astro Starter Kit: Minimal
+# vanhi.id.vn — Astro
 
-```sh
-npm create astro@latest -- --template minimal
+Trang web chính thức của Văn Hỉ, xây dựng lại từ Hugo sang **Astro v7**.
+
+- Blog với Content Collections + Zod validation
+- YouTube redirect pages
+- Giải pháp, Công Cụ AI, Quà tặng, Liên hệ
+- RSS feed, sitemap tự động
+- Static HTML pages (club, off, sp, ...)
+
+## Phát triển
+
+```bash
+npm install
+npm run dev       # http://localhost:4321
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Build
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```bash
+npm run build     # Output: dist/
+npm run preview   # Xem thử bản build
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Deploy lên Cloudflare Pages
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+1. Vào [Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git](https://dash.cloudflare.com/)
+2. Chọn repo `vanthuonghi/vanhi-astro`
+3. Framework preset: **Astro**
+4. Build command: `npm run build`
+5. Build output: `dist`
+6. Deploy
 
-Any static assets, like images, can be placed in the `public/` directory.
+Sau deploy, trỏ domain `vanhi.id.vn` vào Cloudflare Pages.
 
-## 🧞 Commands
+## Deploy lên GitHub Pages
 
-All commands are run from the root of the project, from a terminal:
+1. Vào repo Settings → Pages → Source: **GitHub Actions**
+2. Thêm file `.github/workflows/deploy.yml` với nội dung:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```yaml
+name: Deploy to GitHub Pages
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: withastro/action@v3
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+```
 
-## 👀 Want to learn more?
+## Cấu trúc
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```
+src/
+├── content/          # Content collections
+├── layouts/
+│   └── BaseLayout.astro
+├── pages/
+│   ├── index.astro        # Trang chủ
+│   ├── blog/              # Blog
+│   ├── youtube/           # YouTube
+│   ├── giai-phap/         # Giải pháp
+│   ├── cong-cu-ai/        # Công Cụ AI
+│   ├── qua-tang/          # Quà tặng
+│   ├── lien-he/           # Liên hệ
+│   ├── 404.astro
+│   └── rss.xml.js
+public/
+├── css/style.css
+├── favicon.svg, og-image.svg
+├── _headers
+└── *.html                 # Static pages
+```
