@@ -1,72 +1,239 @@
 ---
-const DEFAULT_HASH = 'c2073d0f21ad8f56aa780dca6708396ef2c84546d4ad56e55c0eae8db8cb25a8';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>URL Shortener — Văn Hỉ</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-    input { padding: 8px; margin: 4px; border: 1px solid #d1d5db; border-radius: 4px; }
-    button { padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .link-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f3f4f6; }
-    .error { color: #dc2626; }
-  </style>
-</head>
-<body>
-  <h1>🔗 URL Shortener</h1>
-  <div class="card">
-    <h3>Thêm link mới</h3>
-    <input type="text" id="slug" placeholder="Slug (vd: youtube)" />
-    <input type="text" id="url" placeholder="https://..." style="width: 300px;" />
-    <button onclick="addLink()">Thêm</button>
-    <p id="msg"></p>
+
+<BaseLayout
+  title="URL Shortener"
+  description="Rút gọn link cho vanhi.id.vn — tạo short URL dễ nhớ"
+>
+  <div id="link-app">
+    <!-- Password gate -->
+    <div id="login-screen" style="text-align:center;padding:40px 0">
+      <h1 class="section-title">🔗 URL Shortener</h1>
+      <p style="color:var(--muted);margin-bottom:20px">Nhập password để quản lý short URL</p>
+      <div style="max-width:320px;margin:0 auto">
+        <input type="password" id="password-input" placeholder="Password..." autocomplete="current-password"
+          style="width:100%;padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--fg);font-size:15px;margin-bottom:12px;box-sizing:border-box" />
+        <button id="unlock-btn" class="cta" style="width:100%">Mở khóa</button>
+        <p id="login-error" style="color:#ff6b6b;font-size:14px;margin-top:8px;display:none"></p>
+      </div>
+    </div>
+
+    <!-- Dashboard (ẩn cho tới khi mở khóa) -->
+    <div id="dashboard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:24px">
+        <h1 class="section-title" style="margin:0">🔗 URL Shortener</h1>
+        <button id="lock-btn" class="cta-ghost" style="font-size:13px;padding:6px 14px">🔒 Khóa</button>
+      </div>
+      <p style="color:var(--muted);margin-bottom:20px">
+        Tạo short URL dạng <code style="color:var(--accent)">vanhi.id.vn/slug</code> cho bất kỳ link nào.
+      </p>
+
+      <div class="card" style="margin-bottom:24px;padding:20px">
+        <h3 style="margin-bottom:12px;font-size:17px">➕ Thêm short URL mới</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <span style="color:var(--muted)">vanhi.id.vn/</span>
+          <input type="text" id="slug-input" placeholder="hosting"
+            style="flex:1;min-width:100px;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);font-size:14px" />
+          <span style="color:var(--muted)">→</span>
+          <input type="url" id="url-input" placeholder="https://affiliate.com/ref=abc"
+            style="flex:2;min-width:200px;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);font-size:14px" />
+          <button id="add-btn" class="cta" style="padding:10px 18px">Tạo</button>
+        </div>
+        <p id="add-msg" style="font-size:14px;margin-top:10px;display:none"></p>
+      </div>
+
+      <div id="links-container">
+        <p style="text-align:center;padding:40px;color:var(--muted)">Đang tải...</p>
+      </div>
+
+      <div class="card" style="margin-top:24px">
+        <h3 style="font-size:16px;margin-bottom:6px">💡 Cách dùng</h3>
+        <p style="color:var(--muted);font-size:14px">
+          Tạo short URL → dùng link <code style="color:var(--accent)">vanhi.id.vn/slug</code> ở bất cứ đâu.<br />
+          Ví dụ: affiliate hosting → <strong>vanhi.id.vn/hosting</strong> → tự động redirect.
+        </p>
+      </div>
+    </div>
   </div>
-  <div class="card">
-    <h3>Danh sách link</h3>
-    <div id="links"></div>
-  </div>
+
   <script>
     const API = '/api/link';
-    const HASH = '${DEFAULT_HASH}';
-    const headers = { 'Authorization': 'Bearer ' + HASH, 'Content-Type': 'application/json' };
+    // SHA-256 của mật khẩu. Khai báo TRONG script này: Astro bundled <script> thành
+    // module riêng nên frontmatter KHÔNG nhìn thấy được (đây là nguyên nhân bug cũ).
+    const EXPECTED_HASH = 'c2073d0f21ad8f56aa780dca6708396ef2c84546d4ad56e55c0eae8db8cb25a8';
+    let token = '';
 
-    async function load() {
-      const res = await fetch(API, { headers });
-      const data = await res.json();
-      const container = document.getElementById('links');
-      container.innerHTML = '';
-      for (const [slug, info] of Object.entries(data.links || {})) {
-        const div = document.createElement('div');
-        div.className = 'link-item';
-        div.innerHTML = `<div><strong>/${slug}</strong> → <a href="${info.url}" target="_blank">${info.url}</a></div>
-          <button onclick="deleteLink('${slug}')" style="background:#dc2626">Xóa</button>`;
-        container.appendChild(div);
+    const el = (id) => document.getElementById(id);
+
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function showError(msg) {
+      const err = el('login-error');
+      if (err) { err.textContent = msg; err.style.display = 'block'; }
+    }
+
+    async function unlock() {
+      const input = el('password-input');
+      const err = el('login-error');
+      if (!input || !err) return;
+      const pw = input.value.trim();
+      if (!pw) { showError('Nhập password'); return; }
+
+      // Hash phía client, chỉ gửi hash lên server
+      const pwHash = await sha256(pw);
+      if (pwHash !== EXPECTED_HASH) { showError('❌ Sai password'); return; }
+
+      // Xác thực thêm với server
+      try {
+        const resp = await fetch(API + '/verify?hash=' + encodeURIComponent(pwHash));
+        const data = await resp.json();
+        if (data.valid) {
+          token = pwHash;
+          const login = el('login-screen');
+          const dash = el('dashboard');
+          if (login) login.style.display = 'none';
+          if (dash) dash.style.display = 'block';
+          err.style.display = 'none';
+          loadLinks();
+        } else {
+          showError('❌ Sai password');
+        }
+      } catch (e) {
+        showError('❌ Lỗi kết nối: ' + (e instanceof Error ? e.message : String(e)));
+      }
+    }
+
+    function lock() {
+      token = '';
+      const dash = el('dashboard');
+      const login = el('login-screen');
+      const input = el('password-input');
+      if (dash) dash.style.display = 'none';
+      if (login) login.style.display = 'block';
+      if (input) input.value = '';
+    }
+
+    async function apiCall(method, body = null) {
+      const opts: RequestInit = { method, headers: { Authorization: 'Bearer ' + token } };
+      if (body) {
+        (opts.headers as Record<string, string>)['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const resp = await fetch(API, opts);
+      return await resp.json();
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c);
+    }
+
+    async function loadLinks() {
+      const container = el('links-container');
+      if (!container) return;
+      try {
+        const data = await apiCall('GET');
+        if (!data.success) {
+          container.innerHTML = '<p style="color:var(--muted);text-align:center">Lỗi: ' + esc(data.error || 'không rõ') + '</p>';
+          return;
+        }
+        const entries = Object.entries(data.links || {});
+        if (entries.length === 0) {
+          container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--muted)">Chưa có short URL nào. Tạo cái đầu tiên bên trên ☝️</p>';
+          return;
+        }
+        let html = '<h3 style="margin-bottom:12px;font-size:17px">📋 Danh sách short URL</h3>';
+        entries.reverse().forEach(function (pair) {
+          const slug = pair[0];
+          const info = pair[1];
+          const shortUrl = 'https://vanhi.id.vn/' + slug;
+          html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
+            '<div style="flex:1;min-width:150px">' +
+            '<a href="' + esc(shortUrl) + '" target="_blank" style="font-weight:600;font-size:15px">/' + esc(slug) + '</a>' +
+            '<div style="font-size:13px;color:var(--muted);word-break:break-all;margin-top:2px">→ ' + esc(info.url) + '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:6px;flex-shrink:0">' +
+            '<button class="copy-btn" data-url="' + esc(shortUrl) + '" style="background:transparent;color:var(--accent);border:1px solid var(--accent);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px">📋 Copy</button>' +
+            '<button class="del-btn" data-slug="' + esc(slug) + '" style="background:transparent;color:#ff6b6b;border:1px solid #ff6b6b;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px">🗑️</button>' +
+            '</div></div>';
+        });
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<p style="color:#ff6b6b;text-align:center">Lỗi kết nối: ' + esc(e instanceof Error ? e.message : String(e)) + '</p>';
       }
     }
 
     async function addLink() {
-      const slug = document.getElementById('slug').value.trim();
-      const url = document.getElementById('url').value.trim();
-      const msg = document.getElementById('msg');
-      if (!slug || !url) { msg.textContent = 'Nhập đầy đủ slug và url'; msg.className = 'error'; return; }
-      const res = await fetch(API, {
-        method: 'POST', headers,
-        body: JSON.stringify({ slug, url })
-      });
-      const data = await res.json();
-      if (data.success) { msg.textContent = 'Đã thêm!'; msg.className = ''; load(); }
-      else { msg.textContent = data.error || 'Lỗi'; msg.className = 'error'; }
+      const slugInput = el('slug-input');
+      const urlInput = el('url-input');
+      const msg = el('add-msg');
+      const btn = el('add-btn');
+      if (!slugInput || !urlInput || !msg || !btn) return;
+      const slug = slugInput.value.trim();
+      const url = urlInput.value.trim();
+      if (!slug || !url) { msg.textContent = 'Nhập đủ slug và URL'; msg.style.display = 'block'; return; }
+      btn.textContent = 'Đang tạo...';
+      btn.disabled = true;
+      try {
+        const data = await apiCall('POST', { slug, url });
+        if (data.success) {
+          slugInput.value = '';
+          urlInput.value = '';
+          msg.style.display = 'none';
+          loadLinks();
+        } else {
+          msg.textContent = 'Lỗi: ' + (data.error || 'không rõ');
+          msg.style.display = 'block';
+        }
+      } catch (e) {
+        msg.textContent = 'Lỗi: ' + (e instanceof Error ? e.message : String(e));
+        msg.style.display = 'block';
+      }
+      btn.textContent = 'Tạo';
+      btn.disabled = false;
     }
 
     async function deleteLink(slug) {
-      await fetch(API, { method: 'DELETE', headers, body: JSON.stringify({ slug }) });
-      load();
+      if (!confirm('Xóa /' + slug + '?')) return;
+      try {
+        const data = await apiCall('DELETE', { slug });
+        if (data.success) loadLinks();
+      } catch (e) {
+        alert('Lỗi: ' + (e instanceof Error ? e.message : String(e)));
+      }
     }
 
-    load();
+    // Dùng addEventListener thay cho onclick attribute: Astro không đưa hàm ra global scope
+    // nên onclick="unlock()" sẽ ReferenceError — thêm một lỗi cần tránh.
+    el('unlock-btn')?.addEventListener('click', unlock);
+    el('lock-btn')?.addEventListener('click', lock);
+    el('add-btn')?.addEventListener('click', addLink);
+    el('password-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
+    document.addEventListener('click', async (e) => {
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      const copyBtn = t.closest('.copy-btn');
+      if (copyBtn) {
+        const url = copyBtn.getAttribute('data-url');
+        if (url && navigator.clipboard) {
+          try {
+            await navigator.clipboard.writeText(url);
+            const prev = copyBtn.textContent;
+            copyBtn.textContent = '✅ Copied!';
+            setTimeout(function () { copyBtn.textContent = prev; }, 2000);
+          } catch (_) { /* clipboard bị chặn — bỏ qua */ }
+        }
+        return;
+      }
+      const delBtn = t.closest('.del-btn');
+      if (delBtn) {
+        const slug = delBtn.getAttribute('data-slug');
+        if (slug) deleteLink(slug);
+      }
+    });
   </script>
-</body>
-</html>
+</BaseLayout>
